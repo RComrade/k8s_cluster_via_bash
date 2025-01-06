@@ -52,11 +52,11 @@ Here's an example of its format:
     ```
 
    The columns are:
-   - **Role**: Used for internal script logic
+   - **Role**: Used for internal script logic; controller-0 is the master controller node, the rest of them are additional and should be added manually w/ `kubeadm`
    - **IPv4**: The real IPv4 address of a host to be used in the cluster
-   - **FQDN**: The fully qualified domain name of the host (e.g., `server-0.kubernetes.local`). It can be customized but has been tested with `kubernetes.local` domain only
-   - **Hostname**: The actual hostname of the host, set during OS setup or initial configuration
-   - **Network** (for workers only): This is required for starting containers within the worker; virtual network information (e.g., `10.200.0.0/24`)
+   - **FQDN**: The fully qualified domain name of a host (e.g., `server-0.kubernetes.local`), it can be customized but has been tested with `kubernetes.local` domain only; recommended to leave by default
+   - **Hostname**: The actual hostname of a host, set during OS setup or initial configuration
+   - **Network** (for workers only): This is required for starting containers within the worker; virtual network information (e.g., `10.200.0.0/24`); recommended to leave by default
 
 You will be asked to input the `machines.txt` details or provide the file manually in the project folder.
 
