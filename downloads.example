@@ -1,0 +1,11 @@
+kubectl https://dl.k8s.io/v$K8S_VERSION/bin/linux/$SYSTEM_ARCH/kubectl
+kube-apiserver https://dl.k8s.io/v$K8S_VERSION/bin/linux/$SYSTEM_ARCH/kube-apiserver
+kube-controller-manager https://dl.k8s.io/v$K8S_VERSION/bin/linux/$SYSTEM_ARCH/kube-controller-manager
+kube-scheduler https://dl.k8s.io/v$K8S_VERSION/bin/linux/$SYSTEM_ARCH/kube-scheduler
+kube-proxy https://dl.k8s.io/v$K8S_VERSION/bin/linux/$SYSTEM_ARCH/kube-proxy
+kubelet https://dl.k8s.io/v$K8S_VERSION/bin/linux/$SYSTEM_ARCH/kubelet
+crictl.tar.gz https://github.com/kubernetes-sigs/cri-tools/releases/download/v$CRICTL_V/crictl-v$CRICTL_V-linux-$SYSTEM_ARCH.tar.gz
+runc https://github.com/opencontainers/runc/releases/download/v$RUNC_V/runc.$SYSTEM_ARCH
+cni-plugins.tgz https://github.com/containernetworking/plugins/releases/download/v$CNI_V/cni-plugins-linux-$SYSTEM_ARCH-v$CNI_V.tgz
+containerd.tar.gz https://github.com/containerd/containerd/releases/download/v$CONTAINERD_V/containerd-$CONTAINERD_V-linux-$SYSTEM_ARCH.tar.gz
+etcd.tar.gz https://github.com/etcd-io/etcd/releases/download/v$ETCD_V/etcd-v$ETCD_V-linux-$SYSTEM_ARCH.tar.gz
