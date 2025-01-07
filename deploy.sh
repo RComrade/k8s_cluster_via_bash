@@ -762,7 +762,7 @@ function generate_k8s_controller_configs(){
     kubectl config set-cluster kubernetes-the-hard-way \
     --certificate-authority=ca.crt \
     --embed-certs=true \
-    --server=https://127.0.0.1:6443 \
+    --server=$SERVER_URL \
     --kubeconfig=admin.kubeconfig
 
    kubectl config set-credentials admin \
@@ -861,9 +861,9 @@ function setup_etcd() {
 
         echo "$SUDO_PASSWORD" | sudo -S systemctl daemon-reload
         echo "$SUDO_PASSWORD" | sudo -S systemctl enable etcd
-        echo "$SUDO_PASSWORD" | sudo -S systemctl start etcd
+        #echo "$SUDO_PASSWORD" | sudo -S systemctl start etcd
 
-        etcdctl member list
+        #etcdctl member list
 EOF
 }
 
@@ -1057,7 +1057,9 @@ function setup_routes() {
 
 function pre_process_controllers() {
     # Use grep to filter lines containing 'controller' and loop through each filtered line
-    grep 'controller' "$MACHINES_FILE" | while IFS=" " read -r ROLE IP FQDN HOSTNAME; do
+    mapfile -t CONTROLLERS < <(grep 'controller' "$MACHINES_FILE")
+    for LINE in "${CONTROLLERS[@]}"; do
+        IFS=" " read -r ROLE IP FQDN HOSTNAME <<< "$LINE"
         # Create variables based on the extracted values
         CONTROLLER_HOSTNAME=$HOSTNAME
         CONTROLLER_IP=$IP
@@ -1072,7 +1074,9 @@ function pre_process_controllers() {
 
 function pre_process_workers() {
     # Use grep to filter lines containing 'worker' and loop through each filtered line
-    grep 'worker' "$MACHINES_FILE" | while IFS=" " read -r ROLE IP FQDN HOSTNAME SUBNET; do
+    mapfile -t WORKERS < <(grep 'worker' "$MACHINES_FILE")
+    for LINE in "${WORKERS[@]}"; do
+        IFS=" " read -r ROLE IP FQDN HOSTNAME SUBNET <<< "$LINE"
         # Create variables based on the extracted values
         WORKER_HOSTNAME=$HOSTNAME
         WORKER_IP=$IP
@@ -1089,14 +1093,16 @@ function pre_process_workers() {
 # Function to process and extract information for controllers from machines.txt
 function process_controllers() {
     # Use grep to filter lines containing 'controller' and loop through each filtered line
-    grep 'controller' "$MACHINES_FILE" | while IFS=" " read -r ROLE IP FQDN HOSTNAME; do
+    mapfile -t CONTROLLERS < <(grep 'controller' "$MACHINES_FILE")
+        for LINE in "${CONTROLLERS[@]}"; do
+        IFS=" " read -r ROLE IP FQDN HOSTNAME <<< "$LINE"
         # Create variables based on the extracted values
         CONTROLLER_HOSTNAME=$HOSTNAME
         CONTROLLER_IP=$IP
         CONTROLLER_FQDN=$FQDN
         CONTROLLER_ROLE=$ROLE
 
-        distribute_ssh_keys "$CONTROLLER_FQDN" 
+        distribute_ssh_keys "$CONTROLLER_FQDN"  
         distribute_kube_configs_to_controllers "$CONTROLLER_HOSTNAME" 
         generate_and_copy_encryption_config "$CONTROLLER_HOSTNAME" 
         distribute_controller_certs "$CONTROLLER_HOSTNAME" 
@@ -1108,7 +1114,9 @@ function process_controllers() {
 # Function to process and extract information for workers from machines.txt
 function process_workers() {
     # Use grep to filter lines containing 'worker' and loop through each filtered line
-    grep 'worker' "$MACHINES_FILE" | while IFS=" " read -r ROLE IP FQDN HOSTNAME SUBNET; do
+    mapfile -t WORKERS < <(grep 'worker' "$MACHINES_FILE")
+        for LINE in "${WORKERS[@]}"; do
+        IFS=" " read -r ROLE IP FQDN HOSTNAME SUBNET <<< "$LINE"
         # Create variables based on the extracted values
         WORKER_HOSTNAME=$HOSTNAME
         WORKER_IP=$IP
@@ -1132,9 +1140,9 @@ get_credentials
 check_os
 get_architecture
 check_required_packages
-prompt_for_versions
-validate_downloads_file
-download_files
+#prompt_for_versions
+#validate_downloads_file
+#download_files
 install_kubectl 
 check_machines_file 
 echo -e "Deploying the cluster..."
@@ -1157,6 +1165,7 @@ generate_k8s_controller_configs
 
 # Process controllers and workers separetely
 echo -e "Processing controller(s)..."
+echo "ROLE: $ROLE, IP: $IP, FQDN: $FQDN, HOSTNAME: $HOSTNAME"
 process_controllers 
 echo -e "Processing workers(s)..."
 process_workers 
