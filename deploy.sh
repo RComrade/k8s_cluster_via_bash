@@ -528,7 +528,7 @@ openssl req -x509 -new -sha512 -noenc -key ca.key -days 3653 -config ca.conf -ou
 # Функция для добавления записей DNS в файл ca.conf
 function add_controllers_to_ca_conf() {
     # Чтение файла machines.txt и извлечение FQDN для контроллеров
-    grep 'controller' "$MACHINES_FILE" | while IFS=" " read -r ROLE IP FQDN HOSTNAME; do
+    grep 'controller' "$MACHINES_FILE" | while IFS=" " read -r ROLE IP FQDN HOSTNAME SUBNET; do
         # Проверяем, существует ли уже запись DNS для данного FQDN в файле
         if ! grep -q "$FQDN" "$CA_CONF_FILE"; then
             # Находим максимальный индекс DNS и увеличиваем его на 1
@@ -791,7 +791,7 @@ function generate_k8s_controller_configs(){
 # Function to generate SERVER_URL from controller-0's FQDN
 function generate_server_url() {
     # Iterate over each line in the machines file
-    while IFS=" " read -r ROLE IP FQDN HOSTNAME; do
+    while IFS=" " read -r ROLE IP FQDN HOSTNAME SUBNET; do
         if [[ "$ROLE" == "controller-0" ]]; then
             # Create SERVER_URL variable using FQDN of controller-0
             SERVER_URL="https://$FQDN:6443"
@@ -1066,12 +1066,13 @@ function pre_process_controllers() {
     # Use grep to filter lines containing 'controller' and loop through each filtered line
     mapfile -t CONTROLLERS < <(grep 'controller' "$MACHINES_FILE")
     for LINE in "${CONTROLLERS[@]}"; do
-        IFS=" " read -r ROLE IP FQDN HOSTNAME <<< "$LINE"
+        IFS=" " read -r ROLE IP FQDN HOSTNAME SUBNET <<< "$LINE"
         # Create variables based on the extracted values
         CONTROLLER_HOSTNAME=$HOSTNAME
         CONTROLLER_IP=$IP
         CONTROLLER_FQDN=$FQDN
         CONTROLLER_ROLE=$ROLE
+        CONTROLLER_SUBNET=$SUBNET
 
         adding_remote_nodes_to_hosts_file "$CONTROLLER_IP" "$CONTROLLER_FQDN" "$CONTROLLER_HOSTNAME" 
         update_remote_hosts_file "$CONTROLLER_FQDN" "$CONTROLLER_HOSTNAME" 
@@ -1102,12 +1103,14 @@ function process_controllers() {
     # Use grep to filter lines containing 'controller' and loop through each filtered line
     mapfile -t CONTROLLERS < <(grep 'controller' "$MACHINES_FILE")
         for LINE in "${CONTROLLERS[@]}"; do
-        IFS=" " read -r ROLE IP FQDN HOSTNAME <<< "$LINE"
+        IFS=" " read -r ROLE IP FQDN HOSTNAME SUBNET <<< "$LINE"
         # Create variables based on the extracted values
         CONTROLLER_HOSTNAME=$HOSTNAME
         CONTROLLER_IP=$IP
         CONTROLLER_FQDN=$FQDN
         CONTROLLER_ROLE=$ROLE
+        CONTROLLER_SUBNET=$SUBNET
+
 
         distribute_ssh_keys "$CONTROLLER_FQDN"  
         distribute_kube_configs_to_controllers "$CONTROLLER_HOSTNAME" 
