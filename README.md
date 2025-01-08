@@ -1,6 +1,7 @@
 # K8S Cluster Deployment via Bash
 
 This project is under development as part of my personal Bash and Kubernetes studies.
+Temporarily does not work due to redesign; I am up to support multiple controllers + metalb
 
 ### Current Stage
 The current stage allows deploying a Kubernetes (K8s) cluster with multiple worker nodes and more than one controller. However, after deployment, any additional controller should be joined to the master via `kubeadm`, which is not automatically installed with this script.
