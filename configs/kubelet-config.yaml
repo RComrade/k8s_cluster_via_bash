@@ -9,9 +9,9 @@ authentication:
     clientCAFile: "/var/lib/kubelet/ca.crt"
 authorization:
   mode: Webhook
-clusterDomain: "cluster.local"
+clusterDomain: "$CLUSTER_DOMAIN"
 clusterDNS:
-  - "10.32.0.10"
+  - "$CLUSTER_IP_RANGE"
 cgroupDriver: systemd
 containerRuntimeEndpoint: "unix:///var/run/containerd/containerd.sock"
 podCIDR: "SUBNET"

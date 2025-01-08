@@ -23,6 +23,9 @@ CNI_V="1.6.0"
 RUNC_V="1.2.1"
 ETCD_V="3.4.34"
 
+# Misc variables
+EDITOR="nano"
+
 # Welcome menu
 function display_welcome() {
     echo -e "${GREEN}Hello, this is a bash script that will deploy k8s in a hard way.${RESET}"
@@ -30,6 +33,7 @@ function display_welcome() {
     echo -e "${BLUE}* Your system must be a debian-like${RESET}"
     echo -e "${BLUE}* Each host should have the same user credentials${RESET}"
     echo -e "${BLUE}* The user should be in a sudo group${RESET}"
+    echo -e "${BLUE}* The default text editor is $EDITOR, might be changed in the very beginning of this script${RESET}"
     echo -e "${BLUE}* In the current folder there should be a text file with a list of hosts that'll act as k8s controllers and workers${RESET}"
     echo -e "${BLUE}* If there is no such file, we generate one during the installation process${RESET}"
     echo -e "${BLUE}* The script is about to install additional software as well, if it is not installed${RESET}"
@@ -195,7 +199,7 @@ function validate_downloads_file() {
         read -p "Do you want to edit the downloads.txt file? (y/n): " EDIT
         if [[ "$EDIT" =~ ^[Yy]$ ]]; then
             echo "Opening downloads.txt for editing..."
-            nano "$DOWNLOADS_FILE"
+            $EDITOR "$DOWNLOADS_FILE"
 
             # Re-run the validation after editing
             validate_downloads_file
@@ -298,7 +302,7 @@ function check_machines_file() {
 
         # Confirm with the user
         echo -e "${GREEN}y${RESET} - ${CYAN}continue${RESET} with the existing configuration "
-        echo -e "${RED}n${RESET} - ${CYAN}nano${RESET} will be opened for editing "
+        echo -e "${RED}n${RESET} - ${CYAN}$EDITOR${RESET} will be opened for editing "
         echo -e -n "(y/n?): "
         read input
         if [[ "$input" == "y" ]]; then
@@ -306,7 +310,7 @@ function check_machines_file() {
             return
         else
             echo -e "${CYAN}Opening $MACHINES_FILE for editing...${RESET}"
-            nano "$MACHINES_FILE"
+            $EDITOR "$MACHINES_FILE"
             check_machines_file
             return
         fi
@@ -320,18 +324,23 @@ function check_machines_file() {
 # Function to create machines.txt from scratch
 function create_machines_file() {
     # Get domain name
-    echo -n -e "Enter the ${CYAN}domain${RESET} for the Kubernetes network (default: ${CYAN}kubernetes.local${RESET}): "
+    echo -n -e "Enter the ${CYAN}domain${RESET} for the Kubernetes network (default: ${CYAN}cluster.local${RESET}): "
     read input
-    DOMAIN=${DOMAIN:-kubernetes.local}
+    DOMAIN=${input:-cluster.local}
 
     # Get subnet for workers
-    echo -n -e "Enter the base ${CYAN}subnet${RESET} for worker nodes (default: ${CYAN}10.200.0.0/24${RESET}): "
+    echo -n -e "Enter the base ${CYAN}worker node subnet${RESET} (default: ${CYAN}10.200.0.0/24${RESET}): "
     read input
-    BASE_SUBNET=${BASE_SUBNET:-10.200.0.0/24}
+    BASE_WORKER_SUBNET=${input:-10.200.0.0/24}
+
+    # Get cluster IP range
+    echo -n -e "Enter the ${CYAN}cluster node subnet${RESET} (default: ${CYAN}10.32.0.0/24${RESET}): "
+    read input
+    CLUSTER_IP_RANGE=${input:-10.32.0.0/24}
 
     # Extract base IP address and starting subnet
-    BASE_IP=$(echo $BASE_SUBNET | cut -d '.' -f 1-2)
-    START_SUBNET=$(echo $BASE_SUBNET | cut -d '/' -f 1 | cut -d '.' -f 3)
+    BASE_WORKER_IP=$(echo $BASE_WORKER_SUBNET | cut -d '.' -f 1-2)
+    START_WORKER_SUBNET=$(echo $BASE_WORKER_SUBNET | cut -d '/' -f 1 | cut -d '.' -f 3)
 
     # Get the number of controllers with input validation (at least 1)
     while true; do
@@ -343,7 +352,6 @@ function create_machines_file() {
             echo -e "${RED}Invalid input! Please enter a valid number for the number of controllers (at least 1).${RESET}"
         fi
     done
-
 
     # Initialize machines.txt
     MACHINES_FILE="machines.txt"
@@ -358,7 +366,7 @@ function create_machines_file() {
         read CONTROLLER_HOSTNAME
 
         # Form and write controller entry to machines.txt
-        echo "controller-$i $CONTROLLER_IP $CONTROLLER_HOSTNAME.$DOMAIN $CONTROLLER_HOSTNAME" >> "$MACHINES_FILE"
+        echo "controller-$i $CONTROLLER_IP $CONTROLLER_HOSTNAME.$DOMAIN $CONTROLLER_HOSTNAME $CLUSTER_IP_RANGE" >> "$MACHINES_FILE"
     done
 
     # Get the number of worker nodes with input validation (at least 1)
@@ -372,11 +380,10 @@ function create_machines_file() {
         fi
     done
 
-
     # Loop for worker entries
     for ((i=0; i<$NUM_WORKERS; i++)); do
         # Calculate subnet for the worker node
-        WORKER_SUBNET=$(($START_SUBNET + $i))
+        WORKER_SUBNET=$(($START_WORKER_SUBNET + $i))
 
         # Get worker IPv4 and hostname
         echo -n -e "Enter the ${GREEN}IPv4${RESET} address for ${CYAN}worker-$i${RESET}: "
@@ -385,7 +392,7 @@ function create_machines_file() {
         read WORKER_HOSTNAME
 
         # Form and write worker entry to machines.txt
-        WORKER_SUBNET_CIDR="$BASE_IP.$WORKER_SUBNET.0/24"
+        WORKER_SUBNET_CIDR="$BASE_WORKER_IP.$WORKER_SUBNET.0/24"
         echo "worker-$i $WORKER_IP $WORKER_HOSTNAME.$DOMAIN $WORKER_HOSTNAME $WORKER_SUBNET_CIDR" >> "$MACHINES_FILE"
     done
 
@@ -410,7 +417,7 @@ function check_availability() {
         read -p "Do you want to edit machines.txt and fix the issue? (y/n): " EDIT
         if [[ "$EDIT" =~ ^[Yy]$ ]]; then
             echo "Opening machines.txt for editing..."
-            nano "$MACHINES_FILE"
+            $EDITOR "$MACHINES_FILE"
             
             # After editing, recheck the controller's availability
             check_availability "$IP" "$HOSTNAME"
@@ -1140,9 +1147,9 @@ get_credentials
 check_os
 get_architecture
 check_required_packages
-#prompt_for_versions
-#validate_downloads_file
-#download_files
+prompt_for_versions
+validate_downloads_file
+download_files
 install_kubectl 
 check_machines_file 
 echo -e "Deploying the cluster..."
